@@ -21,7 +21,9 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from playwright.sync_api import sync_playwright
 
-TARGET_URL = "$target_url"
+# The target URL as a valid Python literal — repr() always yields a compilable
+# constant, even when the raw URL contains quotes or backslashes.
+TARGET_URL = $target_url_literal
 CONCURRENCY = $concurrency
 SELECTOR = $selector
 DEVICE_NAME = $device_name

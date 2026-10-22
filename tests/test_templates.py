@@ -40,6 +40,33 @@ def test_generated_repro_scripts_are_valid_python(report):
     assert "$" not in script.split('"""', 2)[2].replace("${", "")  # no unrendered placeholders
 
 
+HOSTILE_URL = 'http://localhost:8000/?q="a\\b'
+
+
+def test_hostile_target_url_yields_compilable_scripts():
+    """A URL with quotes and backslashes must survive template embedding (#25)."""
+    single = IncidentReport(target_url=HOSTILE_URL, crashes=["x"])
+    concurrent = IncidentReport(target_url=HOSTILE_URL, concurrency=2)
+
+    script = IncidentReporter()._generate_repro_script(single)
+    compile(script, "repro_test.py", "exec")
+    assert f"TARGET_URL = {HOSTILE_URL!r}" in script
+
+    script = IncidentReporter()._generate_repro_script(concurrent)
+    compile(script, "concurrent_repro_test.py", "exec")
+    assert f"TARGET_URL = {HOSTILE_URL!r}" in script
+
+
+def test_generated_scripts_navigate_to_the_original_url():
+    """The embedded literal must be exactly the reported URL, not a mangled one."""
+    script = IncidentReporter()._generate_repro_script(
+        IncidentReport(target_url=HOSTILE_URL, crashes=["x"])
+    )
+    assert "page.goto(TARGET_URL, wait_until=" in script
+    # No raw, un-embedded copy of the URL is left in the script body.
+    assert 'goto("http' not in script
+
+
 def test_repro_device_is_resolved_at_runtime():
     report = IncidentReport(target_url="http://localhost:8000", crashes=["x"], device_name="Pixel 7")
     script = IncidentReporter()._generate_repro_script(report)

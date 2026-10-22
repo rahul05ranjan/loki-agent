@@ -27,6 +27,10 @@ from playwright.sync_api import sync_playwright
 # in which case a generic fallback interaction is used instead.
 REPLAY_TRACE = $replay_trace
 
+# The target URL as a valid Python literal — repr() always yields a compilable
+# constant, even when the raw URL contains quotes or backslashes.
+TARGET_URL = $target_url_literal
+
 # Deterministic API route mocks captured during the session
 API_FAULTS = $api_faults
 
@@ -120,8 +124,8 @@ def test_reproduce_crash():
                         )
                     page.route(f_url, _make_handler(f_status, f_body))
 
-        print("⚡ [LOKI REPRO] Navigating to target: $target_url")
-        page.goto("$target_url", wait_until="domcontentloaded")
+        print(f"⚡ [LOKI REPRO] Navigating to target: {TARGET_URL}")
+        page.goto(TARGET_URL, wait_until="domcontentloaded")
 
         if REPLAY_TRACE:
             print(f"⚡ [LOKI REPRO] Replaying {len(REPLAY_TRACE)} recorded actions from the original session...")

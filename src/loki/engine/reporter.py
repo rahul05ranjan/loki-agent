@@ -118,6 +118,7 @@ class IncidentReporter:
         return render(
             "repro_test.py.tmpl",
             target_url=report.target_url,
+            target_url_literal=repr(report.target_url),
             persona=report.persona_name,
             browser=browser_engine,
             browser_label=browser_engine.capitalize(),
@@ -138,6 +139,7 @@ class IncidentReporter:
         return render(
             "concurrent_repro_test.py.tmpl",
             target_url=report.target_url,
+            target_url_literal=repr(report.target_url),
             concurrency=report.concurrency,
             browser=browser_engine,
             browser_label=browser_engine.capitalize(),
