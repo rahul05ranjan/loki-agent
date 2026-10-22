@@ -355,7 +355,7 @@ def init(
 @app.command()
 def run(
     url: str | None = typer.Argument(None, help="The target URL to test (defaults to .loki/config.yaml if omitted)"),
-    duration: int | None = typer.Option(None, "--duration", "-d", help="Execution duration in seconds"),
+    duration: int | None = typer.Option(None, "--duration", "-d", min=1, help="Execution duration in seconds"),
     headed: bool = typer.Option(False, "--headed", help="Run browser in visible mode (default is headless)"),
     persona: PersonaChoice | None = typer.Option(
         None,
@@ -448,6 +448,8 @@ def run(
     fault_rate: float | None = typer.Option(
         None,
         "--fault-rate",
+        min=0.0,
+        max=1.0,
         help="Probability (0.0 to 1.0) of injecting faults into eligible API requests (default: 0.3)",
     ),
     auth_chaos: bool | None = typer.Option(
