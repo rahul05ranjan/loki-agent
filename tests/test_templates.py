@@ -40,27 +40,36 @@ def test_generated_repro_scripts_are_valid_python(report):
     assert "$" not in script.split('"""', 2)[2].replace("${", "")  # no unrendered placeholders
 
 
-HOSTILE_URL = 'http://localhost:8000/?q="a\\b'
+HOSTILE_URLS = [
+    'http://localhost:8000/?q="a\\b',
+    'http://localhost:8000/?q=\\x',
+    'http://localhost:8000/?q=\\u12',
+    'http://localhost:8000/?q="',
+]
 
 
-def test_hostile_target_url_yields_compilable_scripts():
-    """A URL with quotes and backslashes must survive template embedding (#25)."""
-    single = IncidentReport(target_url=HOSTILE_URL, crashes=["x"])
-    concurrent = IncidentReport(target_url=HOSTILE_URL, concurrency=2)
+@pytest.mark.parametrize("hostile_url", HOSTILE_URLS)
+def test_hostile_target_url_yields_compilable_scripts(hostile_url: str) -> None:
+    """A URL with quotes or backslashes must survive template embedding (#25)."""
+    single = IncidentReport(target_url=hostile_url, crashes=["x"])
+    concurrent = IncidentReport(target_url=hostile_url, concurrency=2)
 
     script = IncidentReporter()._generate_repro_script(single)
     compile(script, "repro_test.py", "exec")
-    assert f"TARGET_URL = {HOSTILE_URL!r}" in script
+    assert f"TARGET_URL = {hostile_url!r}" in script
+    # The docstring must also stay compilable: no raw backslash or quote escapes.
+    assert f"Target: {hostile_url!r}" in script
 
-    script = IncidentReporter()._generate_repro_script(concurrent)
+    script = IncidentReporter()._generate_concurrent_repro_script(concurrent)
     compile(script, "concurrent_repro_test.py", "exec")
-    assert f"TARGET_URL = {HOSTILE_URL!r}" in script
+    assert f"TARGET_URL = {hostile_url!r}" in script
+    assert f"Target: {hostile_url!r}" in script
 
 
 def test_generated_scripts_navigate_to_the_original_url():
     """The embedded literal must be exactly the reported URL, not a mangled one."""
     script = IncidentReporter()._generate_repro_script(
-        IncidentReport(target_url=HOSTILE_URL, crashes=["x"])
+        IncidentReport(target_url=HOSTILE_URLS[0], crashes=["x"])
     )
     assert "page.goto(TARGET_URL, wait_until=" in script
     # No raw, un-embedded copy of the URL is left in the script body.
